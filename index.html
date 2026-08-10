@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
 
-    
+
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
@@ -15,7 +15,7 @@
     <title>Для Александры ❤️</title>
 
     <link rel="stylesheet" href="style.css">
-    
+
 
 </head>
 
@@ -33,7 +33,7 @@
 
 <div id="intro">
 
-    
+
     <div class="intro-glow"></div>
 
     <div class="envelope-container">
@@ -83,7 +83,7 @@
         </div>
 
     </div>
-    
+
 
 </div>
 
@@ -93,7 +93,7 @@
 
 <main id="site">
 
-    
+
     <!-- =================================================
          HERO
     ================================================== -->
@@ -982,6 +982,7 @@
 
 
 
+
     <!-- =================================================
          МУЗЫКА
     ================================================== -->
@@ -991,80 +992,173 @@
 
         <div class="glass-card music-page">
 
-
             <div class="big-music-icon">
                 ♫
             </div>
-
 
             <p class="section-label">
                 Для нас
             </p>
 
-
             <h2>
                 Наша музыка
             </h2>
 
-
-            <p>
-                Первая песня играет фоном
-                после открытия конверта.
+            <p class="music-intro">
+                Песни, которые хочется слушать,
+                когда думаешь друг о друге ♥
             </p>
 
 
-            <!-- ФОНОВАЯ ПЕСНЯ -->
+            <!-- ГЛАВНАЯ ПЕСНЯ -->
 
-            <h3>
-                ♥ Наша главная песня
-            </h3>
+            <div class="music-track"
+                 data-audio="backgroundMusic">
 
-            <audio id="backgroundMusic"
-                   loop
-                   controls>
+                <div class="track-cover main-cover">
+                    ♥
+                </div>
 
-                <source src="music/background.mp3"
-                        type="audio/mpeg">
+                <div class="track-info">
 
-                Ваш браузер не поддерживает аудио.
+                    <div class="track-top">
 
-            </audio>
+                        <div>
+                        <span class="track-label">
+                            НАША ГЛАВНАЯ ПЕСНЯ
+                        </span>
 
+                            <h3>
+                                Для моей Александры
+                            </h3>
+
+                            <p>
+                                Наша особенная песня ♥
+                            </p>
+                        </div>
+
+                        <button class="track-play"
+                                onclick="toggleTrack('backgroundMusic', this)">
+                            ▶
+                        </button>
+
+                    </div>
+
+                    <div class="track-progress">
+
+                    <span class="track-current"
+                          id="backgroundMusicCurrent">
+                        0:00
+                    </span>
+
+                        <input type="range"
+                               class="music-range"
+                               id="backgroundMusicRange"
+                               min="0"
+                               max="100"
+                               value="0"
+                               step="0.1"
+                               oninput="seekTrack('backgroundMusic', this.value)">
+
+                        <span class="track-duration"
+                              id="backgroundMusicDuration">
+                        0:00
+                    </span>
+
+                    </div>
+
+                </div>
+
+                <audio id="backgroundMusic"
+                       loop
+                       preload="metadata">
+
+                    <source src="music/background.mp3"
+                            type="audio/mpeg">
+
+                    Ваш браузер не поддерживает аудио.
+
+                </audio>
+
+            </div>
 
 
             <!-- ВТОРАЯ ПЕСНЯ -->
 
-            <div class="voice-message">
+            <div class="music-track"
+                 data-audio="secondMusic">
 
-            <span class="voice-icon">
-                ♫
-            </span>
+                <div class="track-cover second-cover">
+                    ♫
+                </div>
 
+                <div class="track-info">
 
-                <div>
+                    <div class="track-top">
 
-                    <h3>
-                        Ещё одна песня для тебя
-                    </h3>
+                        <div>
+                        <span class="track-label">
+                            ЕЩЁ ОДНА ДЛЯ ТЕБЯ
+                        </span>
 
-                    <p>
-                        Эту можно включить отдельно,
-                        когда захочется.
-                    </p>
+                            <h3>
+                                Песня для моей буськи
+                            </h3>
+
+                            <p>
+                                Включай, когда захочется ♥
+                            </p>
+                        </div>
+
+                        <button class="track-play"
+                                onclick="toggleTrack('secondMusic', this)">
+                            ▶
+                        </button>
+
+                    </div>
+
+                    <div class="track-progress">
+
+                    <span class="track-current"
+                          id="secondMusicCurrent">
+                        0:00
+                    </span>
+
+                        <input type="range"
+                               class="music-range"
+                               id="secondMusicRange"
+                               min="0"
+                               max="100"
+                               value="0"
+                               step="0.1"
+                               oninput="seekTrack('secondMusic', this.value)">
+
+                        <span class="track-duration"
+                              id="secondMusicDuration">
+                        0:00
+                    </span>
+
+                    </div>
 
                 </div>
 
-
-                <audio controls>
+                <audio id="secondMusic"
+                       preload="metadata">
 
                     <source src="music/song2.mp3"
                             type="audio/mpeg">
 
+                    Ваш браузер не поддерживает аудио.
+
                 </audio>
 
-           
+            </div>
+
+        </div>
 
     </section>
+    
+
 
 
 
@@ -1584,7 +1678,7 @@
         11 мая 2026 — навсегда
 
     </footer>
-    
+
 
 </main>
 
@@ -1595,7 +1689,7 @@
 <div id="modal"
      class="modal">
 
-    
+
     <button class="modal-close"
             onclick="closeImage()">
 
@@ -1607,7 +1701,7 @@
     <img id="modalImage"
          src=""
          alt="Фото">
-    
+
 
 </div>
 
@@ -1618,10 +1712,10 @@
 <audio id="backgroundMusic"
        loop>
 
-    
+
     <source src="music/background.mp3"
             type="audio/mpeg">
-    
+
 
 </audio>
 

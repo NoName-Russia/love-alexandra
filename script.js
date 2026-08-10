@@ -5,7 +5,8 @@
 const relationshipStart = new Date("2026-05-11T00:00:00");
 
 let websiteOpened = false;
-let musicStarted = false;
+let currentTrack = null;
+let timerStarted = false;
 
 
 // ==========================================
@@ -16,11 +17,17 @@ const intro = document.getElementById("intro");
 const envelope = document.getElementById("envelope");
 const site = document.getElementById("site");
 
-const backgroundMusic = document.getElementById("backgroundMusic");
-const musicButton = document.getElementById("musicButton");
+const backgroundMusic =
+    document.getElementById("backgroundMusic");
 
-const modal = document.getElementById("modal");
-const modalImage = document.getElementById("modalImage");
+const musicButton =
+    document.getElementById("musicButton");
+
+const modal =
+    document.getElementById("modal");
+
+const modalImage =
+    document.getElementById("modalImage");
 
 
 // ==========================================
@@ -43,7 +50,7 @@ function openLetter(event) {
         envelope.classList.add("open");
     }
 
-    // Музыка запускается сразу после нажатия
+    // Пробуем запустить музыку после клика
     startBackgroundMusic();
 
     setTimeout(() => {
@@ -63,85 +70,545 @@ function openLetter(event) {
 
 
 // ==========================================
-// ФОНОВАЯ МУЗЫКА
+// ФОРМАТ ВРЕМЕНИ
 // ==========================================
 
-function startBackgroundMusic() {
+function formatMusicTime(seconds) {
 
-    if (!backgroundMusic || musicStarted) {
+    if (!Number.isFinite(seconds)) {
+        return "0:00";
+    }
+
+    const minutes =
+        Math.floor(seconds / 60);
+
+    const secondsPart =
+        Math.floor(seconds % 60)
+            .toString()
+            .padStart(2, "0");
+
+    return `${minutes}:${secondsPart}`;
+}
+
+
+// ==========================================
+// ПОЛУЧИТЬ ЭЛЕМЕНТЫ ПЕСНИ
+// ==========================================
+
+function getTrackElements(audioId) {
+
+    const audio =
+        document.getElementById(audioId);
+
+    if (!audio) {
+        return null;
+    }
+
+    const track =
+        audio.closest(".music-track");
+
+    if (!track) {
+        return null;
+    }
+
+    const button =
+        track.querySelector(".track-play");
+
+    const range =
+        document.getElementById(
+            audioId + "Range"
+        );
+
+    const current =
+        document.getElementById(
+            audioId + "Current"
+        );
+
+    const duration =
+        document.getElementById(
+            audioId + "Duration"
+        );
+
+    return {
+        audio,
+        track,
+        button,
+        range,
+        current,
+        duration
+    };
+}
+
+
+// ==========================================
+// ГЛАВНАЯ КНОПКА МУЗЫКИ
+// ==========================================
+// Это функция для кнопки на главной странице:
+// onclick="toggleMusic()"
+
+function toggleMusic() {
+
+    const audio =
+        document.getElementById("backgroundMusic");
+
+    if (!audio) {
+        console.error(
+            "Не найден backgroundMusic"
+        );
         return;
     }
 
-    backgroundMusic.volume = 0.3;
+    const button =
+        document.getElementById("musicButton");
 
-    const playPromise = backgroundMusic.play();
+    if (!audio.paused) {
 
-    if (playPromise !== undefined) {
+        audio.pause();
 
-        playPromise
-            .then(() => {
+        if (button) {
+            button.textContent = "▶";
+        }
 
-                musicStarted = true;
+        const elements =
+            getTrackElements("backgroundMusic");
 
-                if (musicButton) {
-                    musicButton.textContent = "❚❚";
+        if (elements) {
+            elements.track.classList.remove("playing");
+
+            if (elements.button) {
+                elements.button.textContent = "▶";
+            }
+        }
+
+        currentTrack = null;
+
+        return;
+    }
+
+    stopOtherTracks(audio);
+
+    audio.volume = 0.3;
+
+    audio.play()
+        .then(() => {
+
+            currentTrack = audio;
+
+            if (button) {
+                button.textContent = "❚❚";
+            }
+
+            const elements =
+                getTrackElements("backgroundMusic");
+
+            if (elements) {
+
+                elements.track
+                    .classList.add("playing");
+
+                if (elements.button) {
+                    elements.button.textContent =
+                        "❚❚";
+                }
+            }
+
+        })
+        .catch(error => {
+
+            console.error(
+                "Ошибка запуска музыки:",
+                error
+            );
+
+        });
+}
+
+
+// ==========================================
+// ОСТАНОВИТЬ ДРУГИЕ ПЕСНИ
+// ==========================================
+
+function stopOtherTracks(exceptAudio) {
+
+    document
+        .querySelectorAll(".music-track audio")
+        .forEach(audio => {
+
+            if (audio === exceptAudio) {
+                return;
+            }
+
+            audio.pause();
+            audio.currentTime = 0;
+
+            const elements =
+                getTrackElements(audio.id);
+
+            if (elements) {
+
+                elements.track
+                    .classList.remove("playing");
+
+                if (elements.button) {
+                    elements.button.textContent =
+                        "▶";
                 }
 
-            })
-            .catch(() => {
-
-                // Браузер может заблокировать autoplay.
-                // В таком случае музыка начнёт играть
-                // после следующего клика пользователя.
-
-                musicStarted = false;
-
-                if (musicButton) {
-                    musicButton.textContent = "▶";
+                if (elements.range) {
+                    elements.range.value = 0;
                 }
 
-            });
+                if (elements.current) {
+                    elements.current.textContent =
+                        "0:00";
+                }
+            }
+        });
+}
+
+
+// ==========================================
+// PLAY / PAUSE ПЕСНИ
+// ==========================================
+
+function toggleTrack(audioId, button) {
+
+    const elements =
+        getTrackElements(audioId);
+
+    if (!elements) {
+        console.error(
+            "Не найдена песня:",
+            audioId
+        );
+        return;
+    }
+
+    const audio =
+        elements.audio;
+
+
+    // ------------------------------
+    // ПАУЗА
+    // ------------------------------
+
+    if (!audio.paused) {
+
+        audio.pause();
+
+        if (button) {
+            button.textContent = "▶";
+        }
+
+        elements.track
+            .classList.remove("playing");
+
+        if (audio === currentTrack) {
+            currentTrack = null;
+        }
+
+        // Если это главная песня
+        if (audioId === "backgroundMusic") {
+
+            if (musicButton) {
+                musicButton.textContent = "▶";
+            }
+        }
+
+        return;
+    }
+
+
+    // ------------------------------
+    // ОСТАНАВЛИВАЕМ ДРУГИЕ
+    // ------------------------------
+
+    stopOtherTracks(audio);
+
+
+    // ------------------------------
+    // ЗАПУСК
+    // ------------------------------
+
+    audio.volume = 0.3;
+
+    audio.play()
+        .then(() => {
+
+            currentTrack = audio;
+
+            if (button) {
+                button.textContent = "❚❚";
+            }
+
+            elements.track
+                .classList.add("playing");
+
+
+            // Синхронизация кнопки
+            // на главной странице
+
+            if (audioId === "backgroundMusic") {
+
+                if (musicButton) {
+                    musicButton.textContent =
+                        "❚❚";
+                }
+            }
+
+        })
+        .catch(error => {
+
+            console.error(
+                "Не удалось запустить песню:",
+                error
+            );
+
+        });
+}
+
+
+// ==========================================
+// ПЕРЕМОТКА
+// ==========================================
+
+function seekTrack(audioId, value) {
+
+    const elements =
+        getTrackElements(audioId);
+
+    if (!elements) {
+        return;
+    }
+
+    const audio =
+        elements.audio;
+
+    if (
+        !Number.isFinite(audio.duration) ||
+        audio.duration <= 0
+    ) {
+        return;
+    }
+
+    audio.currentTime =
+        (Number(value) / 100) *
+        audio.duration;
+}
+
+
+// ==========================================
+// ОБНОВЛЕНИЕ ПЛЕЕРА
+// ==========================================
+
+function updateMusicTrack(audio) {
+
+    const elements =
+        getTrackElements(audio.id);
+
+    if (!elements) {
+        return;
+    }
+
+    const {
+        range,
+        current,
+        duration
+    } = elements;
+
+
+    // Текущее время
+
+    if (current) {
+
+        current.textContent =
+            formatMusicTime(
+                audio.currentTime
+            );
+    }
+
+
+    // Длительность
+
+    if (
+        duration &&
+        Number.isFinite(audio.duration)
+    ) {
+
+        duration.textContent =
+            formatMusicTime(
+                audio.duration
+            );
+    }
+
+
+    // Ползунок
+
+    if (
+        range &&
+        Number.isFinite(audio.duration) &&
+        audio.duration > 0
+    ) {
+
+        const percent =
+            (audio.currentTime /
+                audio.duration) *
+            100;
+
+        range.value = percent;
+
+        range.style.background =
+            `linear-gradient(
+                to right,
+                #ff4f9a ${percent}%,
+                rgba(255,255,255,0.15) ${percent}%
+            )`;
     }
 }
 
 
 // ==========================================
-// КНОПКА МУЗЫКИ
+// НАСТРОЙКА АУДИО
 // ==========================================
 
-function toggleMusic() {
+document
+    .querySelectorAll(".music-track audio")
+    .forEach(audio => {
 
-    if (!backgroundMusic) {
+        audio.volume = 0.3;
+
+
+        audio.addEventListener(
+            "timeupdate",
+            () => {
+                updateMusicTrack(audio);
+            }
+        );
+
+
+        audio.addEventListener(
+            "loadedmetadata",
+            () => {
+                updateMusicTrack(audio);
+            }
+        );
+
+
+        audio.addEventListener(
+            "ended",
+            () => {
+
+                const elements =
+                    getTrackElements(
+                        audio.id
+                    );
+
+                if (!elements) {
+                    return;
+                }
+
+                if (elements.button) {
+                    elements.button.textContent =
+                        "▶";
+                }
+
+                elements.track
+                    .classList.remove("playing");
+
+                if (elements.range) {
+                    elements.range.value = 0;
+                }
+
+                updateMusicTrack(audio);
+
+                if (audio === currentTrack) {
+                    currentTrack = null;
+                }
+
+
+                if (
+                    audio.id ===
+                    "backgroundMusic"
+                ) {
+
+                    if (musicButton) {
+                        musicButton.textContent =
+                            "▶";
+                    }
+                }
+
+            }
+        );
+
+    });
+
+
+// ==========================================
+// ЗАПУСК ГЛАВНОЙ ПЕСНИ
+// ==========================================
+
+function startBackgroundMusic() {
+
+    const audio =
+        document.getElementById(
+            "backgroundMusic"
+        );
+
+    if (!audio) {
+        console.error(
+            "Файл backgroundMusic не найден"
+        );
         return;
     }
 
-    if (backgroundMusic.paused) {
+    audio.volume = 0.3;
 
-        backgroundMusic.play()
-            .then(() => {
+    const elements =
+        getTrackElements(
+            "backgroundMusic"
+        );
 
-                musicStarted = true;
-
-                if (musicButton) {
-                    musicButton.textContent = "❚❚";
-                }
-
-            })
-            .catch(() => {
-
-                console.log("Не удалось запустить музыку");
-
-            });
-
-    } else {
-
-        backgroundMusic.pause();
-
-        if (musicButton) {
-            musicButton.textContent = "▶";
-        }
-
+    if (!elements) {
+        return;
     }
+
+    audio.play()
+        .then(() => {
+
+            currentTrack = audio;
+
+            elements.track
+                .classList.add("playing");
+
+            if (elements.button) {
+                elements.button.textContent =
+                    "❚❚";
+            }
+
+            if (musicButton) {
+                musicButton.textContent =
+                    "❚❚";
+            }
+
+        })
+        .catch(error => {
+
+            console.log(
+                "Автозапуск заблокирован браузером."
+            );
+
+            console.log(error);
+
+            if (elements.button) {
+                elements.button.textContent =
+                    "▶";
+            }
+
+            if (musicButton) {
+                musicButton.textContent =
+                    "▶";
+            }
+        });
 }
 
 
@@ -152,10 +619,14 @@ function toggleMusic() {
 function showSection(sectionId, button) {
 
     const sections =
-        document.querySelectorAll(".page-section");
+        document.querySelectorAll(
+            ".page-section"
+        );
 
     const buttons =
-        document.querySelectorAll(".nav-btn");
+        document.querySelectorAll(
+            ".nav-btn"
+        );
 
     sections.forEach(section => {
         section.classList.remove("active");
@@ -222,6 +693,7 @@ function updateTimer() {
             (difference % minute) / second
         );
 
+
     const daysElement =
         document.getElementById("days");
 
@@ -258,6 +730,12 @@ function updateTimer() {
 
 function startTimer() {
 
+    if (timerStarted) {
+        return;
+    }
+
+    timerStarted = true;
+
     updateTimer();
 
     setInterval(
@@ -268,7 +746,7 @@ function startTimer() {
 
 
 // ==========================================
-// ОТКРЫТИЕ ФОТО
+// ФОТО
 // ==========================================
 
 function openImage(src) {
@@ -281,13 +759,10 @@ function openImage(src) {
 
     modal.classList.add("active");
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+        "hidden";
 }
 
-
-// ==========================================
-// ЗАКРЫТИЕ ФОТО
-// ==========================================
 
 function closeImage() {
 
@@ -299,38 +774,38 @@ function closeImage() {
 
     modalImage.src = "";
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 }
 
-
-// ==========================================
-// ЗАКРЫТИЕ MODAL ПО КЛИКУ
-// ==========================================
 
 if (modal) {
 
-    modal.addEventListener("click", function(event) {
+    modal.addEventListener(
+        "click",
+        function(event) {
 
-        if (event.target === modal) {
-            closeImage();
+            if (
+                event.target === modal
+            ) {
+                closeImage();
+            }
+
         }
-
-    });
-
+    );
 }
 
 
-// ==========================================
-// ESC — ЗАКРЫТЬ ФОТО
-// ==========================================
+document.addEventListener(
+    "keydown",
+    function(event) {
 
-document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            closeImage();
+        }
 
-    if (event.key === "Escape") {
-        closeImage();
     }
-
-});
+);
 
 
 // ==========================================
@@ -346,13 +821,17 @@ function toggleDream(element) {
     element.classList.toggle("done");
 
     const check =
-        element.querySelector(".dream-check");
+        element.querySelector(
+            ".dream-check"
+        );
 
     if (!check) {
         return;
     }
 
-    if (element.classList.contains("done")) {
+    if (
+        element.classList.contains("done")
+    ) {
 
         check.textContent = "♥";
 
@@ -361,7 +840,6 @@ function toggleDream(element) {
     } else {
 
         check.textContent = "○";
-
     }
 }
 
@@ -383,7 +861,9 @@ function useCoupon(button) {
         return;
     }
 
-    if (coupon.classList.contains("used")) {
+    if (
+        coupon.classList.contains("used")
+    ) {
         return;
     }
 
@@ -392,13 +872,23 @@ function useCoupon(button) {
     button.textContent =
         "Использовано ♥";
 
-    createLoveEffect();
+    const id =
+        coupon.dataset.coupon;
 
+    if (id) {
+
+        localStorage.setItem(
+            "coupon_" + id,
+            "used"
+        );
+    }
+
+    createLoveEffect();
 }
 
 
 // ==========================================
-// СЕРДЕЧКИ
+// ЭФФЕКТ СЕРДЕЧЕК
 // ==========================================
 
 function createLoveEffect() {
@@ -436,54 +926,51 @@ function createLoveEffect() {
         heart.style.zIndex =
             "9999";
 
-        document.body.appendChild(heart);
+        document.body.appendChild(
+            heart
+        );
 
         const duration =
             1800 +
             Math.random() * 1500;
 
         heart.animate(
-
             [
                 {
                     transform:
                         "translateY(0) scale(1) rotate(0deg)",
-
                     opacity: 1
                 },
-
                 {
                     transform:
                         `translateY(-${window.innerHeight + 100}px)
                          scale(1.5)
                          rotate(${Math.random() * 360}deg)`,
-
                     opacity: 0
                 }
             ],
-
             {
                 duration: duration,
                 easing: "ease-out"
             }
-
         );
 
-        setTimeout(() => {
-            heart.remove();
-        }, duration);
-
+        setTimeout(
+            () => heart.remove(),
+            duration
+        );
     }
-
 }
 
 
 // ==========================================
-// ПЛАВАЮЩИЕ ЧАСТИЦЫ
+// ЧАСТИЦЫ
 // ==========================================
 
 const canvas =
-    document.getElementById("particles");
+    document.getElementById(
+        "particles"
+    );
 
 if (canvas) {
 
@@ -500,7 +987,6 @@ if (canvas) {
 
         canvas.height =
             window.innerHeight;
-
     }
 
 
@@ -542,7 +1028,6 @@ if (canvas) {
                 Math.random() > 0.5
                     ? "✦"
                     : "·";
-
         }
 
 
@@ -558,9 +1043,7 @@ if (canvas) {
                 this.x =
                     Math.random() *
                     canvas.width;
-
             }
-
         }
 
 
@@ -586,9 +1069,7 @@ if (canvas) {
             );
 
             ctx.restore();
-
         }
-
     }
 
 
@@ -597,7 +1078,6 @@ if (canvas) {
         particles.push(
             new Particle()
         );
-
     }
 
 
@@ -610,27 +1090,27 @@ if (canvas) {
             canvas.height
         );
 
-        particles.forEach(particle => {
+        particles.forEach(
+            particle => {
 
-            particle.update();
-            particle.draw();
+                particle.update();
+                particle.draw();
 
-        });
+            }
+        );
 
         requestAnimationFrame(
             animateParticles
         );
-
     }
 
 
     animateParticles();
-
 }
 
 
 // ==========================================
-// СОХРАНЕНИЕ КУПОНОВ
+// ВОССТАНОВЛЕНИЕ КУПОНОВ
 // ==========================================
 
 document
@@ -653,15 +1133,15 @@ document
             coupon.classList.add("used");
 
             const button =
-                coupon.querySelector("button");
+                coupon.querySelector(
+                    "button"
+                );
 
             if (button) {
                 button.textContent =
                     "Использовано ♥";
             }
-
         }
-
     });
 
 
@@ -669,10 +1149,29 @@ document
 // ДЕЛАЕМ ФУНКЦИИ ДОСТУПНЫМИ HTML
 // ==========================================
 
-window.openLetter = openLetter;
-window.showSection = showSection;
-window.openImage = openImage;
-window.closeImage = closeImage;
-window.toggleMusic = toggleMusic;
-window.toggleDream = toggleDream;
-window.useCoupon = useCoupon;
+window.openLetter =
+    openLetter;
+
+window.showSection =
+    showSection;
+
+window.openImage =
+    openImage;
+
+window.closeImage =
+    closeImage;
+
+window.toggleMusic =
+    toggleMusic;
+
+window.toggleTrack =
+    toggleTrack;
+
+window.seekTrack =
+    seekTrack;
+
+window.toggleDream =
+    toggleDream;
+
+window.useCoupon =
+    useCoupon;
